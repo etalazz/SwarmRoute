@@ -96,7 +96,7 @@ One sentence
 - Telemetry hooks — SwarmRoute exposes endpoints for scraping the current pheromone tables and consensus state. Operators can visualise emergent “pheromone maps,” observe cluster‑wide load distribution, and spot anomalies without deep instrumentation.
 
 
-## Quick Start
+## Quick Start.
 
 1. Install Go — SwarmRoute is written in Go. Make sure you have a recent version of Go installed (tested with Go 1.20 and later).
 
