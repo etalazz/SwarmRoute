@@ -1,6 +1,7 @@
 package swarmroute
 
 import (
+	"math"
 	"math/rand"
 	"testing"
 	"time"
@@ -50,6 +51,13 @@ func TestSelectionBiasToLowerLatency(t *testing.T) {
 	for i := 0; i < 200; i++ {
 		sr.ReportResult(svc, a, 0.01, true) // bigger positive pheromone
 		sr.ReportResult(svc, b, 0.5, true)  // smaller positive pheromone
+	}
+
+	// Assert positive pheromone increased more for A than B
+	posA, _ := getPosNeg(t, sr, svc, a)
+	posB, _ := getPosNeg(t, sr, svc, b)
+	if !(posA > posB && posA > 0) {
+		t.Fatalf("expected A to have higher positive pheromone than B: posA=%f posB=%f", posA, posB)
 	}
 
 	// Sample selections
@@ -156,5 +164,74 @@ func TestEvaporationLoopDecaysValues(t *testing.T) {
 	}
 	if !(negAfter < negBefore) {
 		t.Fatalf("expected neg pheromone to decay; before=%f after=%f", negBefore, negAfter)
+	}
+}
+
+func TestEvaporationExactTick(t *testing.T) {
+	rand.Seed(101)
+	sr := NewSwarmRoute()
+	sr.evaporationRate = 0.2 // 20%
+	svc := "svc"
+	a := "A"
+	sr.AddService(svc, []string{a})
+
+	// Set exact starting values
+	sr.mu.Lock()
+	ep := sr.services[svc][0]
+	ep.Pheromones["latency"].Pos = 1.0
+	ep.Pheromones["error"].Neg = 0.5
+	sr.mu.Unlock()
+
+	sr.evaporateOnce()
+
+	posAfter, negAfter := getPosNeg(t, sr, svc, a)
+	if math.Abs(posAfter-0.8) > 1e-12 {
+		t.Fatalf("expected pos to be 0.8 after one tick, got %f", posAfter)
+	}
+	if math.Abs(negAfter-0.4) > 1e-12 {
+		t.Fatalf("expected neg to be 0.4 after one tick, got %f", negAfter)
+	}
+}
+
+func TestExplorationNonZeroOtherEndpoints(t *testing.T) {
+	rand.Seed(2024)
+	sr := NewSwarmRoute()
+	sr.evaporationRate = 0
+	svc := "svc"
+	a, b, c := "A", "B", "C"
+	sr.AddService(svc, []string{a, b, c})
+
+	// Make A dominate by positive pheromone; others remain at 0
+	sr.mu.Lock()
+	sr.services[svc][0].Pheromones["latency"].Pos = 100.0
+	sr.services[svc][0].Pheromones["error"].Neg = 0.0
+	sr.services[svc][1].Pheromones["latency"].Pos = 0.0
+	sr.services[svc][1].Pheromones["error"].Neg = 0.0
+	sr.services[svc][2].Pheromones["latency"].Pos = 0.0
+	sr.services[svc][2].Pheromones["error"].Neg = 0.0
+	sr.mu.Unlock()
+
+	total := 20000
+	countA, countB, countC := 0, 0, 0
+	for i := 0; i < total; i++ {
+		addr, err := sr.PickEndpoint(svc)
+		if err != nil {
+			t.Fatalf("unexpected error picking endpoint: %v", err)
+		}
+		switch addr {
+		case a:
+			countA++
+		case b:
+			countB++
+		case c:
+			countC++
+		}
+	}
+
+	if countA < int(0.8*float64(total)) {
+		t.Fatalf("expected high-pheromone endpoint A to dominate, got %d/%d", countA, total)
+	}
+	if countB == 0 || countC == 0 {
+		t.Fatalf("expected exploration to give non-zero selections to others; got B=%d C=%d", countB, countC)
 	}
 }

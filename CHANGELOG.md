@@ -6,6 +6,31 @@ This project loosely follows the Keep a Changelog format and Semantic Versioning
 
 ## [Unreleased]
 
+### Added
+- Simulation harness to compare SwarmRoute against baseline balancers:
+  - Baselines: Random, RoundRobin, PowerOfTwoChoices, and LeastLatency.
+  - Deterministic in-memory world simulator with events (latency/error changes).
+  - Runnable entrypoint at `cmd/harness` that prints a concise side-by-side report.
+- Per-endpoint jitter support in the simulator (EndpointSpec.JitterSec) and optional jitter updates via events, aligning with the “simulated world” model (L, J, p_fail).
+- Phase-aware reporting in harness (per-window success%, mean, p95 split at steps 2000 and 6000).
+- Reproducibility: the harness prints the RNG seed and uses a pinned default seed in `cmd/harness/main.go`.
+- Adaptation metric: share of selections routed to the degraded endpoint during the bad window [2000, 6000).
+- Library API: Latency-aware penalty controls for slow-but-successful calls:
+  - SetSlowThresholdSec(sec): treat successes with latency above threshold as bad events.
+  - SetBadPosDecay(alpha): decay positive pheromone by a fraction on bad events.
+- Harness tests: sanity checks for SwarmRoute behavior
+  - TestAlwaysBadEndpoint (100% failing endpoint is rapidly and persistently avoided).
+  - TestAlwaysSlowEndpoint (3–4× slower endpoint gets a small share under latency-aware penalty).
+
+### Changed
+- Library: Introduced tuning knobs and APIs in SwarmRoute to support request-scaled adaptation:
+  - SetRequestEvapRate(r): optional per-request evaporation (decoupled from wall-clock) to achieve a target half-life in requests.
+  - SetBaseWeight(w): adjust additive base weight to slightly increase exploration probability.
+  - SetPosNegScale(kpos, kneg): tune positive vs. negative reinforcement magnitudes.
+  - SetPeriodicExploration(everyN, negThreshold): optional periodic uniform exploration among non-terrible endpoints.
+- Harness: SwarmRoute adapter now enables these tunings for simulations (half-life ~2000 requests, baseWeight ~0.05, k_pos=0.25, k_neg=1.2, slow-threshold ~70ms, bad-event pos decay=0.20, periodic exploration every 500 requests).
+  This makes slow-but-successful calls count as bad during the degraded window and drives bad-window share well below 10%.
+
 ## [0.1.1] - 2025-11-12
 
 ### Added
