@@ -21,6 +21,18 @@ This project loosely follows the Keep a Changelog format and Semantic Versioning
 - Harness tests: sanity checks for SwarmRoute behavior
   - TestAlwaysBadEndpoint (100% failing endpoint is rapidly and persistently avoided).
   - TestAlwaysSlowEndpoint (3–4× slower endpoint gets a small share under latency-aware penalty).
+- Multi-seed experiments:
+  - Aggregation API `AggregateMultiSeed` and pretty printer `FormatAggregatedResults` under `harness/`.
+  - New CLI `cmd/experiments` to run the canonical scenario and harder variants across multiple seeds and report mean ± stddev of success, p95, and bad-window share.
+- Harder scenarios (all in `cmd/experiments`):
+  - Many endpoints (10), degrade two at different times with later recovery.
+  - Drift (gradual latency ramp/de-ramp) instead of step changes.
+  - Flaky-but-fast endpoint (very low latency with 30–40% errors).
+- Real HTTP microservice demo: `cmd/httpdemo` spins up 3 local servers and replays the degrade window; prints success, mean/p95, and bad-window share per strategy.
+- Documentation: New README “Usage” section with
+  - Basic example (initialization, PickEndpoint, ReportResult),
+  - Advanced high-throughput example with tuning knobs (request-scaled evaporation, slow-threshold, exploration), and
+  - Pitfalls & tips for optimal usage.
 
 ### Changed
 - Library: Introduced tuning knobs and APIs in SwarmRoute to support request-scaled adaptation:
