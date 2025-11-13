@@ -5,6 +5,9 @@
 </p>
 
 
+<p align="center"><strong>“We mathematically ensured that in degraded conditions, the expected pheromone update for a failing/slow endpoint is negative, so its probability mass decays over time, while fast/healthy endpoints gain mass.”</strong></p>
+
+
 ## Overview
 
 SwarmRoute is a lightweight sidecar and library that applies principles from swarm intelligence to service discovery, routing, and load balancing. Each instance in your microservice mesh runs its own SwarmRoute agent which maintains pheromone tables and participates in a simple local consensus process. These agents reinforce paths that lead to low latency and high reliability while forgetting stale or degraded routes. Rather than relying on a single control plane, SwarmRoute lets the system heal and adapt itself when services appear, disappear, or become congested.
