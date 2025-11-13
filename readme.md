@@ -103,7 +103,7 @@ One sentence
 2. Build SwarmRoute — Fetch the repository and build the library (note: use three dots `...`, not two `..`):
 
 ```bash
-git clone https://github.com/your-org/swarmroute.git
+git clone https://github.com/etalazz/swarmroute.git
 cd swarmroute
 go build ./...
 ```
